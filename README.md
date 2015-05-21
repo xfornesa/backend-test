@@ -29,3 +29,65 @@ Considerations:
 * * * 
 
 Please email your completed test to me as a git patch (https://ariejan.net/2009/10/26/how-to-create-and-apply-a-patch-with-git/).
+
+## Installation
+
+Download composer.phar and install dependencies:
+
+    $ php composer.phar install
+
+## Execution
+
+    $ php bin/console video:import glorf
+
+## Tests
+
+    $ php bin/behat -c behat.yml
+    $ php bin/phpunit -c phpunit.xml
+    
+## Considerations
+
+### ParseProviders
+
+I wrote a couple of Parsers, one for each site. Instead of having one Parser by site, we can have one Parser which takes a configuration  (an specification) how to map provided data with a normalized representation, which will then be used to create Video instances.
+
+Then, when a new site provider is required, we will only need to setup some configuration somewhere (database via CMS) to get the import running with no deploy of code.
+
+### Domain events
+
+Instead of printing some information directly to the screen, we can manage this progress publishing an event "new VideoImported($video)" to an EventBus.
+
+Then we can have a VideoImportedSubscriber who logs every video imported and store this information to a log file or simply print to screen.
+
+```php
+
+    class ImportService
+    {
+        private function raiseVideoImportedEvent(Video $video)
+        {
+            $bus = EventBus::getInstance();
+            $bus->publish(new VideoImported($video));
+        }
+    
+    }
+
+```
+
+For clarity of the code I took a singleton instance instead of injecting the instance.
+
+### Video Builder
+
+Some providers could have some missing information about a video or having different data which others providers do not have. This can will force a large constructor with all the params optionals, or having all the setters to inject the data.
+
+I mean, instead of having a constructor like:
+
+    $video = new Video(null, null, ['tagA']);
+
+or setters with no business intention:
+
+    $video = new Video();
+    $video->setTags(['tagA']);
+
+We can write a more meaningful sentence:
+
+    $video = VideoBuilder::aVideo()->withTags(['tagA'])->build();

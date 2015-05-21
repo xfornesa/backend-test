@@ -1,0 +1,28 @@
+#!/usr/bin/env php
+<?php
+require __DIR__.'/../vendor/autoload.php';
+
+use Prunatic\Domain\Video\Import\ImportService;
+use Prunatic\Domain\Video\InMemoryVideoRepository;
+use Prunatic\Domain\Video\Loader\DelegatingLoader;
+use Prunatic\Domain\Video\Loader\JsonFileLoader;
+use Prunatic\Domain\Video\Loader\LoaderResolver;
+use Prunatic\Domain\Video\Loader\YamlFileLoader;
+use Prunatic\Domain\Video\Parser\ContentParserFactory;
+use Prunatic\Infrastructure\Video\Console\ImportCommand;
+
+$application = new \Symfony\Component\Console\Application();
+
+$videoRepository = new InMemoryVideoRepository();
+$resolver = new LoaderResolver([new YamlFileLoader(), new JsonFileLoader()]);
+$loader = new DelegatingLoader($resolver);
+$parserFactory = new ContentParserFactory();
+$importService = new ImportService(
+    $videoRepository,
+    __DIR__.'/../feed-exports',
+    $loader,
+    $parserFactory
+);
+$application->add(new ImportCommand($importService));
+
+$application->run();

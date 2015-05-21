@@ -1,0 +1,9 @@
+# behat.yml
+default:
+    suites:
+        default:
+            paths:
+                - %paths.base%/features
+            contexts:
+                - Prunatic\Context\FeatureContext:
+                    - feed-exports
